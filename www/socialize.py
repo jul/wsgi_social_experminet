@@ -1,13 +1,15 @@
-import markdown
+from markdown import Markdown
 from flask import Flask, flash, redirect, url_for
 from flask import render_template, safe_join
 from flask import Markup
 from patch import Proxied
+import codecs
 import os
 _cdir="content"
 conf={ 
     '_cdir' : "content" 
 }
+
 
 app = Flask(__name__)
 app.wsgi_app = Proxied(app.wsgi_app)
@@ -41,9 +43,9 @@ def norm_path(_dir="/", initial_req=None, conf=conf):
             uri for uri in os.listdir(cur_dir) if
             os.path.isdir( os.path.join(cur_dir,uri))] 
         return dict(
-            md=md,
+            md=unicode(md),
             url=url,
-            cur_dir=cur_dir,
+            cur_dir=unicode(cur_dir),
             category = category,
             _error=initial_req
             )
@@ -54,17 +56,19 @@ def norm_path(_dir="/", initial_req=None, conf=conf):
     
 @app.route("/r/")
 @app.route('/r/<path:_path>') 
-def markdown(conf=conf,_path="/index"):
+def markdown_interpreter(conf=conf,_path="index"):
+    renderer=Markdown()
+    convert=renderer.convert
     dir_info=norm_path(_path) 
     content=";)"
-    try: 
-        with open(dir_info["md"]) as md_c:
-            content=md_c.read()
-    except:
-        flash("bouhouhouh","error")
-    return content + str(dir_info)
+    #try: 
+    with codecs.open(dir_info["md"], "r", "utf8") as md_c:
+        content=md_c.read()
+    #except:
+    #    flash("bouhouhouh","error")
+    return convert(content) + str(dir_info)
     
 
 
 if '__main__' == __name__ :
-    app.run(port=5005,debug=False)
+    app.run(port=5005,debug=True)
